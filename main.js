@@ -1,0 +1,317 @@
+import { initShaderProgram } from "./shader.js";
+import { Maze } from "./maze.js";
+import { Rat } from "./rat.js";
+import { VIEW_STATES, RAT_STATES } from "./state.js";
+
+let currentView = VIEW_STATES.OBSERVATION_VIEW
+
+/*
+TODO: Gather all quads as triangles and draw them all in one frame
+Save the VertexBufferObject, only compute vertices per frame 
+Get 2d objects to draw in 3d
+Have top and rat view and observation view work
+
+Next assignment: Image -> mapped -> GLQuad
+*/
+
+main();
+async function main() {
+	console.log('This is working');
+
+	//
+	// start gl
+	// 
+	const canvas = document.getElementById('glcanvas');
+	const gl = canvas.getContext('webgl');
+	if (!gl) {
+		alert('Your browser does not support WebGL');
+	}
+	gl.clearColor(0.75, 0.85, 0.8, 1.0);
+	
+	gl.enable(gl.DEPTH_TEST);
+	gl.depthFunc(gl.LEQUAL);
+
+	//
+	// Create shaders
+	// 
+	const vertexShaderText = await(await fetch("simple.vs")).text();
+	const fragmentShaderText = await(await fetch("simple.fs")).text();
+	const shaderProgram = initShaderProgram(gl, vertexShaderText, fragmentShaderText);
+
+	//
+	// Bind textures
+	//
+	gl.activeTexture(gl.TEXTURE0);
+	gl.bindTexture(gl.TEXTURE_2D, loadTexture(gl, 'granite.jpg'));
+
+	gl.activeTexture(gl.TEXTURE1);
+	gl.bindTexture(gl.TEXTURE_2D, loadTexture(gl, "hampter.png"))
+
+	gl.uniform1i(gl.getUniformLocation(shaderProgram, "uTexture0"), 0);
+
+	//
+	// Create content to display
+	//
+	const WIDTH = 2;
+	const HEIGHT = 2;
+	const m = new Maze(WIDTH, HEIGHT);
+
+
+	let ratverts = await((await fetch("objects/hampterone.json")).json()) 
+
+	const rat = new Rat(0.5, 0.5, m, ratverts);
+
+	//
+	// load a projection matrix onto the shader
+	// 
+
+	
+
+	const margin = 0.5;
+	let xlow = -margin;
+	let xhigh = WIDTH+margin;
+	let ylow = -margin;
+	let yhigh = HEIGHT+margin;
+
+	let worldXHigh = xhigh;
+	let worldYHigh = yhigh;
+	let worldXLow = xlow;
+	let worldYLow = ylow;
+
+	
+
+
+	//
+	// load a modelview matrix onto the shader
+	// 
+	const modelViewMatrixUniformLocation = gl.getUniformLocation(shaderProgram, "uModelViewMatrix");
+	const identityMatrix = mat4.create();
+    gl.uniformMatrix4fv(modelViewMatrixUniformLocation, false, identityMatrix);
+
+	//
+	// Register Listeners
+	//
+	addEventListener("click", click);
+	function click(event) {
+		console.log("click");
+		const xWorld = xlow + event.offsetX / gl.canvas.clientWidth * (xhigh - xlow);
+
+		const yWorld = ylow + (gl.canvas.clientHeight - event.offsetY) / gl.canvas.clientHeight * (yhigh - ylow);
+		// Do whatever you want here, in World Coordinates.
+	};
+
+	addEventListener("mousemove", (event) => {
+		const xWorld = worldXLow + event.offsetX / gl.canvas.clientWidth * (worldXHigh - worldXLow);
+		const yWorld = worldYLow + (gl.canvas.clientHeight - event.offsetY) / gl.canvas.clientHeight * (worldYHigh - worldYLow);
+		//rat.look(xWorld, yWorld, worldXHigh, worldYHigh);
+	}); 
+
+	addEventListener("keydown", (e) => {
+		handleKeydown(e, rat);
+	});
+
+	addEventListener("keyup", (e) => {
+		handleKeyup(e, rat);
+	})
+
+	function handleKeydown(event, rat) {
+		console.log(event.keyCode)
+		switch (event.keyCode) {
+			case 84:
+				currentView = VIEW_STATES.TOP_VIEW;
+				break;
+			case 79:
+				currentView = VIEW_STATES.OBSERVATION_VIEW;
+				break;
+			case 82:
+				currentView = VIEW_STATES.RAT_VIEW;
+
+			case 38: //Arrow up
+				rat.state |= RAT_STATES.MOVEFORWARD;
+				break;
+			case 37: //Arrow left
+				rat.state |= RAT_STATES.ROTATELEFT;
+				break;
+			case 39: //Arrow right
+				rat.state |= RAT_STATES.ROTATERIGHT;
+				break;
+			case 40: //Arrow down
+				rat.state |= RAT_STATES.MOVEBACKWARD;
+				break;
+			case 83:
+				rat.state |= RAT_STATES.SPRINTING;
+				break;
+		}
+	}
+
+	function handleKeyup(event, rat) {
+		switch (event.keyCode) {
+
+			case 38: //Arrow up
+				rat.state &= ~RAT_STATES.MOVEFORWARD;
+				break;
+			case 37: //Arrow left
+				rat.state &= ~RAT_STATES.ROTATELEFT;
+				break;
+			case 39: //Arrow right
+				rat.state &= ~RAT_STATES.ROTATERIGHT;
+				break;
+			case 40: //Arrow down
+				rat.state &= ~RAT_STATES.MOVEBACKWARD;
+				break;
+			case 83:
+				rat.state &= ~RAT_STATES.SPRINTING;
+				break;
+		}
+	}
+
+
+	//
+	// Main render loop
+	//
+	let previousTime = 0;
+	function redraw(currentTime){
+		currentTime *= .001; // milliseconds to seconds
+		let DT = currentTime - previousTime;
+		if(DT > .1)
+			DT = .1;
+		previousTime = currentTime;
+
+		rat.handleControlStates(DT);
+
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+		gl.uniformMatrix4fv(modelViewMatrixUniformLocation, false, identityMatrix);
+
+		if (currentView == VIEW_STATES.OBSERVATION_VIEW) {
+			setObservationView(gl, shaderProgram, WIDTH, HEIGHT);
+			m.draw(gl, shaderProgram);
+		} else if (currentView == VIEW_STATES.TOP_VIEW) {
+			setTopView(gl, shaderProgram, canvas, xhigh, xlow, yhigh, ylow, worldXHigh, worldXLow, worldYHigh, worldYLow);
+			m.draw(gl, shaderProgram, true)
+		} else if (currentView == VIEW_STATES.RAT_VIEW) {
+			setRatsView(gl, shaderProgram, WIDTH, HEIGHT, rat);
+			m.draw(gl, shaderProgram)
+		}
+
+		
+		
+
+		//m.drawPath(gl, shaderProgram);
+
+		rat.draw(gl, shaderProgram);
+
+		//rat.move(DT);
+
+		
+		requestAnimationFrame(redraw);
+	}
+	requestAnimationFrame(redraw);
+
+};
+
+function setObservationView(gl, shaderProgram, WIDTH, HEIGHT) {
+	let fovDegrees = 60;
+	let fov = (fovDegrees*180)/Math.PI;
+	//What's difference between gl.canvas and canvas??
+	let canvasAspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+	const nearPlane = 0.1;
+	const farPlane = WIDTH+HEIGHT;
+
+	const projectionMatrixUniformLocation = gl.getUniformLocation(shaderProgram, "uProjectionMatrix");
+	const projectionMatrix = mat4.create();
+	mat4.perspective(projectionMatrix, fov, canvasAspect, nearPlane, farPlane)
+
+
+	const lookAtMatrix = mat4.create();
+
+	const eye = [WIDTH/2-0.5, -HEIGHT/6, (WIDTH/2)+1] //where the camera is
+	const at = [WIDTH/2, HEIGHT/2, 0] //where the camera is looking
+	const up = [0, 0, 1]; //the up vector
+
+	mat4.lookAt(lookAtMatrix, eye, at, up);
+
+	mat4.multiply(projectionMatrix, projectionMatrix, lookAtMatrix);
+
+	gl.uniformMatrix4fv(projectionMatrixUniformLocation, false, projectionMatrix);
+}
+
+function setRatsView(gl, shaderProgram, WIDTH, HEIGHT, rat) {
+	let fovDegrees = -90;
+	let fov = (fovDegrees*180)/Math.PI;
+	//What's difference between gl.canvas and canvas??
+	let canvasAspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+	const nearPlane = 0.1;
+	const farPlane = WIDTH+HEIGHT;
+
+	//squareWorld();
+
+	const projectionMatrixUniformLocation = gl.getUniformLocation(shaderProgram, "uProjectionMatrix");
+	const projectionMatrix = mat4.create();
+	mat4.perspective(projectionMatrix, fov, canvasAspect, nearPlane, farPlane)
+
+
+	const lookAtMatrix = mat4.create();
+
+	const eye = [rat.x, rat.y, 0.5] //where the camera is
+	const at = [WIDTH/2, HEIGHT/2, 0] //where the camera is looking TODO: set rats view lookat
+	const up = [0, 0, 1]; //the up vector
+
+	mat4.lookAt(lookAtMatrix, eye, at, up);
+
+	mat4.multiply(projectionMatrix, projectionMatrix, lookAtMatrix);
+
+	gl.uniformMatrix4fv(projectionMatrixUniformLocation, false, projectionMatrix);
+}
+
+
+function setTopView(gl, shaderProgram, canvas, xhigh, xlow, yhigh, ylow, worldXHigh, worldXLow, worldYHigh, worldYLow) {
+	//TODO: This is topview, so this
+	const projectionMatrixUniformLocation = gl.getUniformLocation(shaderProgram, "uProjectionMatrix");
+	const projectionMatrix = mat4.create();
+	const aspect = canvas.clientWidth / canvas.clientHeight
+
+	const width = xhigh - xlow
+	const height = yhigh - ylow
+
+	if (aspect >= width/height) {
+		const newWidth = aspect*height;
+		const xMidpoint = (xlow + xhigh)/2;
+		const xlowNew = xMidpoint - newWidth/2;
+		const xhighNew = xMidpoint + newWidth/2;
+		worldXHigh = xhighNew;
+		worldXLow = xlowNew;
+		mat4.perspective(projectionMatrix, )
+		mat4.ortho(projectionMatrix, xlowNew, xhighNew, ylow, yhigh, -1, 1);
+	} else {
+		const newHeight = width/aspect;
+		const yMidPoint = (ylow + yhigh)/2;
+		const ylowNew = yMidPoint - newHeight/2;
+		const yhighNew = yMidPoint + newHeight/2;
+		worldYHigh = yhighNew;
+		worldYLow = ylowNew;
+		mat4.ortho(projectionMatrix, xlow, xhigh, ylowNew, yhighNew, -1, 1);
+	}
+
+	gl.uniformMatrix4fv(projectionMatrixUniformLocation, false, projectionMatrix);
+
+}
+
+function loadTexture(gl, url) {
+	const texture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+  
+	// Fill the texture with a 1x1 blue pixel while waiting for the image to load
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
+  
+	const image = new Image();
+	image.onload = function () {
+	  gl.bindTexture(gl.TEXTURE_2D, texture);
+	  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+	  gl.generateMipmap(gl.TEXTURE_2D);
+	};
+	image.src = url;
+  
+	return texture;
+}
+
