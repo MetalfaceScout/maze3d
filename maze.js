@@ -3,7 +3,7 @@ import { drawLine, drawLineStrip} from "./shapes2d.js";
 import { drawStored, storeQuad } from "./shapes3d.js";
 
 class Cell{
-    constructor(){
+    constructor() {
         this.left = true;
         this.bottom = true;
         this.right = true;
@@ -11,42 +11,53 @@ class Cell{
         this.visited = false;
     }
 
-    storeVerts(r, c, vertices) {
+    storeVerts(r, c, vertices, width, height) {
         const x = c;
         const y = r;
+        //floor
+        storeQuad(
+            vertices,
+            [0, 0, 0], [0,0],
+            [width, 0, 0], [width, 0],
+            [width, height, 0], [width, height],
+            [0, height, 0], [0, height]    
+        )
+
+
+        //walls
         if (this.left){
             storeQuad(
                 vertices,
-                [x, y+1, 1], [1,1], //^->
+                [x, y+1, 1], [0,0], //^->
                 [x, y, 1], [1,0],  //^
-                [x, y, 0],  [0,0], //.
+                [x, y, 0],  [1,1], //.
                 [x, y+1, 0], [0,1], //>
             );
         }
         if (this.bottom){
             storeQuad(
                 vertices,
-                [x+1, y, 1], [0,1],
-                [x, y, 1], [1,1],
-                [x, y, 0], [1,0],
-                [x+1, y, 0], [0,0],
+                [x+1, y, 1], [0,0],
+                [x, y, 1], [1,0],
+                [x, y, 0], [1,1],
+                [x+1, y, 0], [0,1],
             )
         }
         if(this.top){
             storeQuad(
                 vertices,
-                [x+1, y+1, 1], [0,1],
-                [x, y+1, 1], [1,1],
-                [x, y+1, 0], [1,0],
-                [x+1, y+1, 0], [0,0],
+                [x+1, y+1, 1], [0,0],
+                [x, y+1, 1], [1,0],
+                [x, y+1, 0], [1,1],
+                [x+1, y+1, 0], [0,1],
             )
         }        
         if(this.right){
             storeQuad(
                 vertices,
-                [x+1, y+1, 1], [1,1], //^->
+                [x+1, y+1, 1], [0,0], //^->
                 [x+1, y, 1], [1,0],  //^
-                [x+1, y, 0],  [0,0], //.
+                [x+1, y, 0],  [1,1], //.
                 [x+1, y+1, 0], [0,1], //>
             );
         }
@@ -208,14 +219,14 @@ class Maze{
                 }
             }
         } else {
-            drawStored(gl, shaderProgram, this.mazeVerts)
+            drawStored(gl, shaderProgram, this.mazeVerts);
         }
     }
 
     storeVerts(verts) {
         for (let r = 0; r < this.height; r++) {
             for (let c = 0; c < this.width; c++) {
-                this.cells[r][c].storeVerts(r,c, verts)
+                this.cells[r][c].storeVerts(r,c, verts, this.width, this.height)
             }
         }
     }

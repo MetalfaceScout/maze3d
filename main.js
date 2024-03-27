@@ -23,6 +23,9 @@ async function main() {
 	// 
 	const canvas = document.getElementById('glcanvas');
 	const gl = canvas.getContext('webgl');
+
+	const maxTextureUnits = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+
 	if (!gl) {
 		alert('Your browser does not support WebGL');
 	}
@@ -41,19 +44,28 @@ async function main() {
 	//
 	// Bind textures
 	//
+
+	
+	
 	gl.activeTexture(gl.TEXTURE0);
-	gl.bindTexture(gl.TEXTURE_2D, loadTexture(gl, 'granite.jpg'));
+	loadTexture(gl, "granite.jpg");
+	gl.uniform1i(gl.getUniformLocation(shaderProgram, "uTexture0"), 0);
 
 	gl.activeTexture(gl.TEXTURE1);
-	gl.bindTexture(gl.TEXTURE_2D, loadTexture(gl, "hampter.png"))
+	loadTexture(gl, "hampter.png");
+	gl.uniform1i(gl.getUniformLocation(shaderProgram, "uTexture1"), 1);
 
-	gl.uniform1i(gl.getUniformLocation(shaderProgram, "uTexture0"), 0);
+
+	//use inactive shader for some reason
+	gl.activeTexture(gl.TEXTURE0);
+	
+
 
 	//
 	// Create content to display
 	//
-	const WIDTH = 2;
-	const HEIGHT = 2;
+	const WIDTH = 5;
+	const HEIGHT = 4;
 	const m = new Maze(WIDTH, HEIGHT);
 
 
@@ -125,7 +137,7 @@ async function main() {
 				break;
 			case 82:
 				currentView = VIEW_STATES.RAT_VIEW;
-
+				break;
 			case 38: //Arrow up
 				rat.state |= RAT_STATES.MOVEFORWARD;
 				break;
@@ -177,28 +189,34 @@ async function main() {
 			DT = .1;
 		previousTime = currentTime;
 
+		gl.uniform1f(gl.getUniformLocation(shaderProgram, "useColor"), 0.0);
+
 		rat.handleControlStates(DT);
 
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 		gl.uniformMatrix4fv(modelViewMatrixUniformLocation, false, identityMatrix);
 
+		gl.uniform1f(gl.getUniformLocation(shaderProgram, "fragTexIndex"), 0);
+
 		if (currentView == VIEW_STATES.OBSERVATION_VIEW) {
 			setObservationView(gl, shaderProgram, WIDTH, HEIGHT);
 			m.draw(gl, shaderProgram);
 		} else if (currentView == VIEW_STATES.TOP_VIEW) {
+			gl.uniform1f(gl.getUniformLocation(shaderProgram, "useColor"), 1.0);
+			gl.uniform3f(gl.getUniformLocation(shaderProgram, "color2d"), 1.0, 0.0, 0.0);
 			setTopView(gl, shaderProgram, canvas, xhigh, xlow, yhigh, ylow, worldXHigh, worldXLow, worldYHigh, worldYLow);
 			m.draw(gl, shaderProgram, true)
+			gl.uniform1f(gl.getUniformLocation(shaderProgram, "useColor"), 0.0);
 		} else if (currentView == VIEW_STATES.RAT_VIEW) {
 			setRatsView(gl, shaderProgram, WIDTH, HEIGHT, rat);
 			m.draw(gl, shaderProgram)
 		}
 
 		
-		
-
+		gl.uniform1f(gl.getUniformLocation(shaderProgram, "fragTexIndex"), 1.0);
 		//m.drawPath(gl, shaderProgram);
-
+	
 		rat.draw(gl, shaderProgram);
 
 		//rat.move(DT);
@@ -254,7 +272,9 @@ function setRatsView(gl, shaderProgram, WIDTH, HEIGHT, rat) {
 	const lookAtMatrix = mat4.create();
 
 	const eye = [rat.x, rat.y, 0.5] //where the camera is
-	const at = [WIDTH/2, HEIGHT/2, 0] //where the camera is looking TODO: set rats view lookat
+	const atX = Math.cos(rat.rz*(Math.PI/180)) + rat.x;
+	const atY = Math.sin(rat.rz*(Math.PI/180)) + rat.y;
+	const at = [atX, atY, 0] //where the camera is looking
 	const up = [0, 0, 1]; //the up vector
 
 	mat4.lookAt(lookAtMatrix, eye, at, up);
@@ -311,7 +331,6 @@ function loadTexture(gl, url) {
 	  gl.generateMipmap(gl.TEXTURE_2D);
 	};
 	image.src = url;
-  
 	return texture;
 }
 

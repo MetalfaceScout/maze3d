@@ -26,7 +26,7 @@ class Rat extends Entity {
         const translatedX = x - this.x
         const translatedY = y - this.y
 
-        const rad = Math.atan2(translatedY, translatedX);;
+        const rad = Math.atan2(translatedY, translatedX);
 
         this.rz = rad * (180/Math.PI);
     }
@@ -55,13 +55,21 @@ class Rat extends Entity {
             this.move(DT);
         } 
         if (this.state & RAT_STATES.ROTATELEFT) {
-            this.spinLeft(DT);
+            if (this.state & RAT_STATES.MOVEFORWARD) {
+                this.spinLeft(DT*2);
+            } else {
+                this.spinLeft(DT);
+            }
         }
         if (this.state & RAT_STATES.MOVEBACKWARD) {
-            this.move(-DT);
+            this.move(-DT*0.5);
         }
         if (this.state & RAT_STATES.ROTATERIGHT) {
-            this.spinLeft(-DT);
+            if (this.state & RAT_STATES.MOVEFORWARD) {
+                this.spinLeft(-DT);   
+            } else {
+                this.spinLeft((-DT)*2);
+            }
         }
         if (this.state & RAT_STATES.SPRINTING) {
             this.move(DT);

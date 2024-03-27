@@ -52,11 +52,8 @@ class Entity {
             }
         });
 
-        gl.activeTexture(gl.TEXTURE1);
-        gl.uniform1i(gl.getUniformLocation(shaderProgram, "uTexture0"), 1);
-            
         //With our model view matrix setup, and vertices parsed, we can draw
-        drawStored(gl, shaderProgram, drawvertices)
+        drawStored(gl, shaderProgram, drawvertices);
     }
 }
 

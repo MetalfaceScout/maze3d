@@ -27,14 +27,14 @@ function storeQuad(vertices, v1, uv1, v2, uv2, v3, uv3, v4, uv4) {
 function storeQuadUV(vertices, v1, v2, v3, v4) {
 	// ex: v1 = (0,0,0), v2 = (1,0,0), v3 = (1,1,)
 	vertices.push(
-		v1[0], v1[1], v1[2], v1[3], v1[4],
-		v2[0], v2[1], v2[2], v2[3], v2[4],
-		v3[0], v3[1], v3[2], v3[3], v3[4],
+		v1[0], v1[1], v1[2], v1[3], -v1[4],
+		v2[0], v2[1], v2[2], v2[3], -v2[4],
+		v3[0], v3[1], v3[2], v3[3], -v3[4],
 	)
 	vertices.push(
-		v1[0], v1[1], v1[2], v1[3], v1[4],
-		v3[0], v3[1], v3[2], v3[3], v3[4],
-		v4[0], v4[1], v4[2], v4[3], v4[4],
+		v1[0], v1[1], v1[2], v1[3], -v1[4],
+		v3[0], v3[1], v3[2], v3[3], -v3[4],
+		v4[0], v4[1], v4[2], v4[3], -v4[4],
 	)
 }
 
@@ -53,6 +53,7 @@ function storeQuadBart(vertices, x1, y1, z1, u1,v1, x2, y2, z2, u2,v2, x3, y3, z
 }
 
 function bindBuffers(gl, shaderProgram, vertices) {
+
 	const vertexBufferObject = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferObject);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -69,7 +70,7 @@ function bindBuffers(gl, shaderProgram, vertices) {
 	gl.enableVertexAttribArray(positionAttribLocation)
 
 	//UV
-	const uvAttribLocation = gl.getAttribLocation(shaderProgram, 'vertUV')
+	const uvAttribLocation = gl.getAttribLocation(shaderProgram, 'vertUV');
 	gl.vertexAttribPointer(
 		uvAttribLocation,
 		2,
