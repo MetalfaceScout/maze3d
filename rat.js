@@ -56,9 +56,9 @@ class Rat extends Entity {
         } 
         if (this.state & RAT_STATES.ROTATELEFT) {
             if (this.state & RAT_STATES.MOVEFORWARD) {
-                this.spinLeft(DT*2);
-            } else {
                 this.spinLeft(DT);
+            } else {
+                this.spinLeft(DT*2);
             }
         }
         if (this.state & RAT_STATES.MOVEBACKWARD) {
