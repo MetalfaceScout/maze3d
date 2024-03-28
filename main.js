@@ -52,18 +52,18 @@ async function main() {
 	//
 	// Create content to display
 	//
-	const WIDTH = 2;
-	const HEIGHT = 2;
-	const m = new Maze(WIDTH, HEIGHT, globalTextures);
+	const WIDTH = 10;
+	const HEIGHT = 15;
+	const m = new Maze(WIDTH, HEIGHT, globalTextures, gl, shaderProgram);
 
 
 	let ratverts = await((await fetch("objects/hampterone.json")).json()) 
 
-	const rat = new Rat(0.5, 0.5, m, ratverts, globalTextures);
+	const rat = new Rat(0.5, 0.5, m, ratverts, globalTextures, gl);
 
 	let shoeverts = await((await fetch("objects/shoe.json")).json()) 
 
-	const shoe = new Shoe(WIDTH - 0.5, HEIGHT - 0.5, shoeverts, globalTextures);
+	const shoe = new Shoe(WIDTH - 0.5, HEIGHT - 0.5, shoeverts, globalTextures, m, gl);
 
 	//
 	// load a projection matrix onto the shader
@@ -204,11 +204,12 @@ async function main() {
 			m.draw(gl, shaderProgram)
 		}
 
-		
+		gl.uniformMatrix4fv(modelViewMatrixUniformLocation, false, identityMatrix);
 		//m.drawPath(gl, shaderProgram);
 	
 		rat.draw(gl, shaderProgram);
 
+		gl.uniformMatrix4fv(modelViewMatrixUniformLocation, false, identityMatrix);
 		//rat.move(DT);
 
 		shoe.draw(gl, shaderProgram);

@@ -1,6 +1,6 @@
 import { randomDouble, randomInt } from "./random.js";
 import { drawLine, drawLineStrip} from "./shapes2d.js";
-import { drawStored, storeQuad } from "./shapes3d.js";
+import { drawStored, storeQuad, createVbo, drawStoredVbo } from "./shapes3d.js";
 
 class Cell{
     constructor() {
@@ -81,10 +81,12 @@ class Cell{
     }
 }
 class Maze{
-    constructor(width, height, textures){
+    constructor(width, height, textures, gl){
         this.width = width;
         this.height = height;
         this.cells = [];
+
+        // Create Cells
         for(let r=0; r<this.height; r++){
             this.cells.push([])
             for(let c= 0; c<this.width; c++){
@@ -92,29 +94,32 @@ class Maze{
             }
         }
 
-
-        this.wallTextureIndex = textures.createTexture("textures/granite.jpg")
-
+        // Knockout walls to create maze
         this.RemoveWalls(0,0);
 
+        // Create a texture and return it's index
+        this.wallTextureIndex = textures.createTexture("textures/granite.jpg")
 
+        
+        // Create a solve path
         this.path = [];
-
         for (let r = 0; r < this.height; r++) {
             for (let c = 0; c < this.width; c++) {
                 this.cells[r][c].visited = false;
             }
         }
-
         this.findPath(0,0);
         
+        // Knockout first and last walls
         this.cells[0][0].bottom = false;
         this.cells[this.height-1][this.width-1].top = false;
 
+
+        // Get an array of all the verts we need to render in quad form
         this.mazeVerts = [];
-
         this.storeVerts(this.mazeVerts);
-
+        this.vbo = createVbo(gl, this.mazeVerts);
+        this.vboLength = this.mazeVerts.length
     }
 
     findPath(r,c) {
@@ -222,7 +227,7 @@ class Maze{
                 }
             }
         } else {
-            drawStored(gl, shaderProgram, this.mazeVerts, this.wallTextureIndex);
+            drawStoredVbo(gl, shaderProgram, this.vbo, this.vboLength, this.wallTextureIndex);
         }
     }
 

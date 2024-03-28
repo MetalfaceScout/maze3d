@@ -2,8 +2,8 @@ import { Entity } from "./entity.js";
 import { RAT_STATES } from "./state.js";
 
 class Rat extends Entity {
-    constructor (x, y, maze, vertices, textures) {
-        super(x, y, 0, 0, 0, 0, [0.2, 0.2, 0.2], vertices, textures, "textures/hampter.png");
+    constructor (x, y, maze, vertices, textures, gl) {
+        super(x, y, 0, 0, 0, 0, [0.2, 0.2, 0.2], vertices, textures, "textures/hampter.png", gl);
 
         this.state = RAT_STATES;
 

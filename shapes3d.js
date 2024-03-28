@@ -52,12 +52,7 @@ function storeQuadBart(vertices, x1, y1, z1, u1,v1, x2, y2, z2, u2,v2, x3, y3, z
 	vertices.push(x1, y1, z1, u1,v1, x3, y3, z3, u3,v3, x4, y4, z4, u4,v4);
 }
 
-function bindBuffers(gl, shaderProgram, vertices) {
-
-	const vertexBufferObject = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferObject);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-
+function bindAttributes(gl, shaderProgram) {
 	const positionAttribLocation = gl.getAttribLocation(shaderProgram, 'vertPosition')
 	gl.vertexAttribPointer(
 		positionAttribLocation,
@@ -82,14 +77,39 @@ function bindBuffers(gl, shaderProgram, vertices) {
 	gl.enableVertexAttribArray(uvAttribLocation)
 }
 
-//Draw all stored, should be called once per frame
+//Create a vbo from the stored quads. Also binds
+function createVbo(gl, vertices) {
+	const vertexBufferObject = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferObject);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	return vertexBufferObject;
+}
+
 function drawStored(gl, shaderProgram, vertices, textureindex) {
+	// Set the texture index to the one we want to draw
 	gl.uniform1f(gl.getUniformLocation(shaderProgram, "fragTexIndex"), textureindex);
-	bindBuffers(gl, shaderProgram, vertices);
+
+	// Create a vbo to use with GL, and bind it
+	const vbo = createVbo(gl, vertices);
+
+	// Enable our attributes to be used for this draw
+	bindAttributes(gl, shaderProgram);
+
+	// Draw!
 	gl.drawArrays(gl.TRIANGLES, 0, vertices.length/5)
+	return vbo;
+}
+
+function drawStoredVbo(gl, shaderProgram, vbo, vboSize, textureindex) {
+	gl.uniform1f(gl.getUniformLocation(shaderProgram, "fragTexIndex"), textureindex);
+
+	//Now that I'm passing vbo, I have to manually bind it
+	gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+
+	bindAttributes(gl, shaderProgram);
+
+	gl.drawArrays(gl.TRIANGLES, 0, vboSize/5);
 }
 
 
-
-
-export {storeQuad, storeQuadUV, storeTriUV, drawStored, storeQuadBart};
+export {storeQuad, storeQuadUV, storeTriUV, drawStored, drawStoredVbo, createVbo};

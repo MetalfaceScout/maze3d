@@ -1,9 +1,9 @@
-import { storeQuadUV, drawStored, storeTriUV } from "./shapes3d.js";
+import { storeQuadUV, drawStored, storeTriUV, createVbo, drawStoredVbo } from "./shapes3d.js";
 import { Textures } from "./texture.js";
 
 //So far an entity has a place in the world and can draw itself, and has a texture.
 class Entity {
-    constructor(x,y,z, rx,ry,rz, scalearray, vertices, textures, texturefile) {
+    constructor(x,y,z, rx,ry,rz, scalearray, vertices, textures, texturefile, gl) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -11,21 +11,36 @@ class Entity {
         this.ry = ry;
         this.rz = rz;
         this.scale = scalearray;
-        this.vertices =  vertices;
+
+        this.vertices = []
+
+        vertices.forEach(face => {
+            if (face.length == 4) {
+                //store quad
+                storeQuadUV(this.vertices,
+                    face[0],
+                    face[1],
+                    face[2],
+                    face[3]
+                )
+            }
+            else {
+                storeTriUV(this.vertices,
+                    face[0],
+                    face[1],
+                    face[2]    
+                )
+            }
+        });
+
         this.textureindex = textures.createTexture(texturefile);
+        this.vbo = gl.createBuffer();
+	    gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+	    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
+        this.vboLength = this.vertices.length;
     }
 
     draw(gl, shaderProgram) {
-        const drawvertices = this.setupDraw(gl, shaderProgram);
-        
-
-        //With our model view matrix setup, and vertices parsed, we can draw
-        drawStored(gl, shaderProgram, drawvertices, this.textureindex);
-    }
-
-    setupDraw(gl, shaderProgram) {
-        let drawvertices = [];
-
         //Create model view matrix
         const modelViewMatrixUniformLocation = gl.getUniformLocation(shaderProgram, "uModelViewMatrix");
         let modelViewMatrix = mat4.create();
@@ -39,28 +54,10 @@ class Entity {
         mat4.rotateZ(modelViewMatrix, modelViewMatrix, this.rz*Math.PI/180);
 
         //Insert into shader
-        gl.uniformMatrix4fv(modelViewMatrixUniformLocation, false, modelViewMatrix);
+        gl.uniformMatrix4fv(modelViewMatrixUniformLocation, false, modelViewMatrix);     
 
-        //Extract vertex information from array and parse it into data readable by webGL
-        this.vertices.forEach(face => {
-            if (face.length == 4) {
-                //store quad
-                storeQuadUV(drawvertices,
-                    face[0],
-                    face[1],
-                    face[2],
-                    face[3]
-                )
-            }
-            else {
-                storeTriUV(drawvertices,
-                    face[0],
-                    face[1],
-                    face[2]    
-                )
-            }
-        });
-        return drawvertices;
+        //With our model view matrix setup, and vertices parsed, we can draw
+        drawStoredVbo(gl, shaderProgram, this.vbo, this.vboLength, this.textureindex);
     }
 }
 
