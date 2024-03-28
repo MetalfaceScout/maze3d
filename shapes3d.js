@@ -83,7 +83,8 @@ function bindBuffers(gl, shaderProgram, vertices) {
 }
 
 //Draw all stored, should be called once per frame
-function drawStored(gl, shaderProgram, vertices) {
+function drawStored(gl, shaderProgram, vertices, textureindex) {
+	gl.uniform1f(gl.getUniformLocation(shaderProgram, "fragTexIndex"), textureindex);
 	bindBuffers(gl, shaderProgram, vertices);
 	gl.drawArrays(gl.TRIANGLES, 0, vertices.length/5)
 }

@@ -81,16 +81,19 @@ class Cell{
     }
 }
 class Maze{
-    constructor(width, height){
+    constructor(width, height, textures){
         this.width = width;
         this.height = height;
-        this.cells = []
+        this.cells = [];
         for(let r=0; r<this.height; r++){
             this.cells.push([])
             for(let c= 0; c<this.width; c++){
                 this.cells[r].push(new Cell());
             }
         }
+
+
+        this.wallTextureIndex = textures.createTexture("textures/granite.jpg")
 
         this.RemoveWalls(0,0);
 
@@ -219,7 +222,7 @@ class Maze{
                 }
             }
         } else {
-            drawStored(gl, shaderProgram, this.mazeVerts);
+            drawStored(gl, shaderProgram, this.mazeVerts, this.wallTextureIndex);
         }
     }
 

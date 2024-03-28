@@ -1,7 +1,9 @@
 import { initShaderProgram } from "./shader.js";
 import { Maze } from "./maze.js";
 import { Rat } from "./rat.js";
+import { Shoe } from "./shoe.js";
 import { VIEW_STATES, RAT_STATES } from "./state.js";
+import { Textures } from "./texture.js";
 
 let currentView = VIEW_STATES.OBSERVATION_VIEW
 
@@ -45,38 +47,27 @@ async function main() {
 	// Bind textures
 	//
 
-	
-	
-	gl.activeTexture(gl.TEXTURE0);
-	loadTexture(gl, "granite.jpg");
-	gl.uniform1i(gl.getUniformLocation(shaderProgram, "uTexture0"), 0);
-
-	gl.activeTexture(gl.TEXTURE1);
-	loadTexture(gl, "hampter.png");
-	gl.uniform1i(gl.getUniformLocation(shaderProgram, "uTexture1"), 1);
-
-
-	//use inactive shader for some reason
-	gl.activeTexture(gl.TEXTURE0);
-	
-
+	let globalTextures = new Textures(gl, shaderProgram);
 
 	//
 	// Create content to display
 	//
-	const WIDTH = 5;
-	const HEIGHT = 4;
-	const m = new Maze(WIDTH, HEIGHT);
+	const WIDTH = 2;
+	const HEIGHT = 2;
+	const m = new Maze(WIDTH, HEIGHT, globalTextures);
 
 
 	let ratverts = await((await fetch("objects/hampterone.json")).json()) 
 
-	const rat = new Rat(0.5, 0.5, m, ratverts);
+	const rat = new Rat(0.5, 0.5, m, ratverts, globalTextures);
+
+	let shoeverts = await((await fetch("objects/shoe.json")).json()) 
+
+	const shoe = new Shoe(WIDTH - 0.5, HEIGHT - 0.5, shoeverts, globalTextures);
 
 	//
 	// load a projection matrix onto the shader
 	// 
-
 	
 
 	const margin = 0.5;
@@ -206,7 +197,7 @@ async function main() {
 			gl.uniform1f(gl.getUniformLocation(shaderProgram, "useColor"), 1.0);
 			gl.uniform3f(gl.getUniformLocation(shaderProgram, "color2d"), 1.0, 0.0, 0.0);
 			setTopView(gl, shaderProgram, canvas, xhigh, xlow, yhigh, ylow, worldXHigh, worldXLow, worldYHigh, worldYLow);
-			m.draw(gl, shaderProgram, true)
+			m.draw(gl, shaderProgram, true);
 			gl.uniform1f(gl.getUniformLocation(shaderProgram, "useColor"), 0.0);
 		} else if (currentView == VIEW_STATES.RAT_VIEW) {
 			setRatsView(gl, shaderProgram, WIDTH, HEIGHT, rat);
@@ -214,13 +205,13 @@ async function main() {
 		}
 
 		
-		gl.uniform1f(gl.getUniformLocation(shaderProgram, "fragTexIndex"), 1.0);
 		//m.drawPath(gl, shaderProgram);
 	
 		rat.draw(gl, shaderProgram);
 
 		//rat.move(DT);
 
+		shoe.draw(gl, shaderProgram);
 		
 		requestAnimationFrame(redraw);
 	}
@@ -317,20 +308,5 @@ function setTopView(gl, shaderProgram, canvas, xhigh, xlow, yhigh, ylow, worldXH
 
 }
 
-function loadTexture(gl, url) {
-	const texture = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, texture);
-  
-	// Fill the texture with a 1x1 blue pixel while waiting for the image to load
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
-  
-	const image = new Image();
-	image.onload = function () {
-	  gl.bindTexture(gl.TEXTURE_2D, texture);
-	  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-	  gl.generateMipmap(gl.TEXTURE_2D);
-	};
-	image.src = url;
-	return texture;
-}
+
 

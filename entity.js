@@ -1,8 +1,9 @@
 import { storeQuadUV, drawStored, storeTriUV } from "./shapes3d.js";
+import { Textures } from "./texture.js";
 
-//So far an entity has a place in the world and can draw itself.
+//So far an entity has a place in the world and can draw itself, and has a texture.
 class Entity {
-    constructor(x,y,z, rx,ry,rz, scalearray,vertices) {
+    constructor(x,y,z, rx,ry,rz, scalearray, vertices, textures, texturefile) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -11,10 +12,18 @@ class Entity {
         this.rz = rz;
         this.scale = scalearray;
         this.vertices =  vertices;
+        this.textureindex = textures.createTexture(texturefile);
     }
 
     draw(gl, shaderProgram) {
+        const drawvertices = this.setupDraw(gl, shaderProgram);
         
+
+        //With our model view matrix setup, and vertices parsed, we can draw
+        drawStored(gl, shaderProgram, drawvertices, this.textureindex);
+    }
+
+    setupDraw(gl, shaderProgram) {
         let drawvertices = [];
 
         //Create model view matrix
@@ -51,9 +60,7 @@ class Entity {
                 )
             }
         });
-
-        //With our model view matrix setup, and vertices parsed, we can draw
-        drawStored(gl, shaderProgram, drawvertices);
+        return drawvertices;
     }
 }
 
