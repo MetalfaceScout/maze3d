@@ -82,6 +82,7 @@ function createVbo(gl, vertices) {
 	const vertexBufferObject = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, vertexBufferObject);
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	console.log(vertices);
 	return vertexBufferObject;
 }
 

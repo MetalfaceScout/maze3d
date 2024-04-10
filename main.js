@@ -52,8 +52,8 @@ async function main() {
 	//
 	// Create content to display
 	//
-	const WIDTH = 10;
-	const HEIGHT = 15;
+	const WIDTH = 2;
+	const HEIGHT = 2;
 	const m = new Maze(WIDTH, HEIGHT, globalTextures, gl, shaderProgram);
 
 
@@ -81,8 +81,6 @@ async function main() {
 	let worldXLow = xlow;
 	let worldYLow = ylow;
 
-	
-
 
 	//
 	// load a modelview matrix onto the shader
@@ -94,6 +92,7 @@ async function main() {
 	//
 	// Register Listeners
 	//
+	
 	addEventListener("click", click);
 	function click(event) {
 		console.log("click");
